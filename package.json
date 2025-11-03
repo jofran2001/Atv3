@@ -6,16 +6,21 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/main.js",
-    "dev": "ts-node src/main.ts"
+    "dev": "ts-node src/main.ts",
+    "server": "ts-node src/server.ts"
   },
   "keywords": [],
   "author": "aerocode",
   "license": "MIT",
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "inquirer": "^9.2.7",
     "readline-sync": "^1.4.10"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
     "@types/inquirer": "^9.0.9",
     "@types/node": "^20.11.0",
     "@types/readline-sync": "^1.4.4",

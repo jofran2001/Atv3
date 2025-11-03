@@ -1,0 +1,149 @@
+.filter-section {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-section label {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.aeronave-select {
+  padding: 10px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  min-width: 300px;
+}
+
+.aeronave-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.pecas-container {
+  margin-top: 24px;
+}
+
+.pecas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.peca-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.peca-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.peca-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.peca-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #1a202c;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge.nacional {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.badge.importada {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.peca-info {
+  margin-bottom: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #718096;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge.em-producao {
+  background: #fed7aa;
+  color: #7c2d12;
+}
+
+.status-badge.em-transporte {
+  background: #bfdbfe;
+  color: #1e3a8a;
+}
+
+.status-badge.pronta {
+  background: #86efac;
+  color: #14532d;
+}
+
+.peca-actions {
+  padding-top: 16px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.status-select {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.success-banner {
+  padding: 16px;
+  background: #c6f6d5;
+  color: #22543d;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  text-align: center;
+  font-weight: 600;
+}
+

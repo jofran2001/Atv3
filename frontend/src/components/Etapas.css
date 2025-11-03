@@ -1,0 +1,113 @@
+.etapas-container {
+  margin-top: 24px;
+}
+
+.etapas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.etapa-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.etapa-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.etapa-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.etapa-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  color: #1a202c;
+}
+
+.etapa-number {
+  font-size: 12px;
+  color: #718096;
+  font-weight: 600;
+}
+
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge.pendente {
+  background: #fed7aa;
+  color: #7c2d12;
+}
+
+.status-badge.andamento {
+  background: #bfdbfe;
+  color: #1e3a8a;
+}
+
+.status-badge.concluida {
+  background: #86efac;
+  color: #14532d;
+}
+
+.etapa-info {
+  margin-bottom: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #718096;
+}
+
+.etapa-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.action-select,
+.funcionario-select {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.action-select:focus,
+.funcionario-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.action-select:disabled {
+  background: #f7fafc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+

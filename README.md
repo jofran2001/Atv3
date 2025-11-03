@@ -1,67 +1,239 @@
-# Aerocode CLI
+# Aerocode - Sistema de Produção de Aeronaves
 
-Sistema para gerenciamento da produção de aeronaves.
+Sistema completo para gerenciamento da produção de aeronaves com interface CLI e GUI web.
 
-Instalação
+## Visão Geral
 
-1. Instale dependências:
+O projeto possui duas interfaces:
+- **CLI**: Interface de linha de comando original
+- **GUI Web**: Interface web moderna com React, TypeScript e Vite
 
-   npm install
+## Instalação
 
-2. Para desenvolvimento direto (requer ts-node):
+### Instalação Completa
 
-   npm run dev
+1. No diretório raiz, instale as dependências do backend:
 
-3. Para compilar e executar:
+```bash
+npm install
+```
 
-   npm run build
-   npm start
+2. No diretório frontend, instale as dependências do frontend:
 
-Visão geral do CLI
+```bash
+cd frontend
+npm install
+cd ..
+```
 
-O CLI usa um menu interativo construído dinamicamente:
+## Execução
 
-- Se você não estiver logado: as opções exibidas são `Login` e `Sair`.
-- Após login: você verá `Logout (usuario)`, `Cadastrar Aeronave`, `Listar Etapas`, `Atualizar Status`, `Gerar Relatório` e `Sair`.
-- A opção `Gerenciar Funcionários` aparece apenas para usuários com papel `ADMINISTRADOR`.
+### Modo CLI
 
-Usuário inicial (criado automaticamente na primeira execução)
+Para usar a interface CLI original:
 
-- usuário: `admin`
-- senha: `admin123`
+```bash
+npm run dev
+```
 
-Comandos / fluxos principais
+### Modo Web (GUI)
 
-- Login: autentica o usuário no sistema.
-- Gerenciar Funcionários (apenas ADMIN): submenu com opções para Listar, Cadastrar, Editar e Excluir funcionários.
-  - Ao cadastrar um funcionário, apenas administradores podem executar essa ação.
-  - Ao editar/excluir um usuário que seja ADMIN, o sistema pede confirmação explícita (digite `CONFIRMAR`).
-- Cadastrar Aeronave: cria uma nova aeronave (somente ADMIN e ENGENHEIRO podem cadastrar).
-- Listar Etapas: exibe o progresso das etapas de uma aeronave.
-- Atualizar Status: permite atualizar peças, etapas ou registrar testes.
-- Gerar Relatório: gera um arquivo texto em `relatorios/relatorio_<codigo>.txt`.
+Para usar a interface web:
 
-Persistência e auditoria
+1. **Terminal 1** - Inicie o servidor backend:
+```bash
+npm run server
+```
 
-- Dados de usuários: `data/users.txt` (JSON por linha).
-- Dados de aeronaves: `data/aeronaves.txt` (JSON por linha).
-- Auditoria de alterações em usuários: `data/user_audit.txt` (texto por linha) com formato:
-  TIMESTAMP | action:ACTION | actor:ACTOR_ID | target:TARGET_ID | usuario:USERNAME | nivel:ROLE
+2. **Terminal 2** - Inicie o frontend:
+```bash
+cd frontend
+npm run dev
+```
 
-Segurança e permissões
+3. Acesse no navegador: `http://localhost:5173`
 
-- Senhas atualmente armazenadas em texto simples.
-- Apenas administradores podem criar novos funcionários e alterar/excluir outros usuários.
-- Funcionários não-admins podem alterar apenas seus próprios dados.
-- O sistema previne automaticamente a exclusão ou despromoção do último administrador.
+### Login Inicial
 
-Exemplo de uso rápido
+- **Usuário:** `admin`
+- **Senha:** `admin123`
 
-1. Inicie o CLI:
+Este usuário é criado automaticamente na primeira execução.
 
-   npm run dev
+## Funcionalidades
 
-2. Selecione `Login` e entre com o usuário `admin` / `admin123`.
-3. Selecione `Gerenciar Funcionários` (apenas visível para admins) e escolha `Cadastrar novo`.
+### Dashboard
+- Visão geral de todas as aeronaves
+- Estatísticas: total de aeronaves, concluídas, em andamento, testes realizados
 
+### Gerenciamento de Aeronaves
+- Listagem de todas as aeronaves cadastradas
+- Cadastro de novas aeronaves (apenas ADMIN e ENGENHEIRO)
+- Detalhamento: peças, etapas, testes
 
+### Gerenciamento de Peças
+- Visualização de peças por aeronave
+- Cadastro de peças (Nacional/Importada)
+- Atualização de status (Em Produção, Em Transporte, Pronta)
+
+### Gerenciamento de Etapas
+- Visualização de etapas de produção
+- Cadastro de novas etapas
+- Avanço de etapas (só avança se a anterior estiver concluída)
+- Conclusão de etapas
+- Associação de funcionários às etapas
+
+### Gerenciamento de Testes
+- Registro de testes (Elétrico, Hidráulico, Aerodinâmico)
+- Resultados (Aprovado/Reprovado)
+- Visualização do histórico de testes
+
+### Gerenciamento de Usuários (apenas ADMIN)
+- Listagem de todos os usuários
+- Cadastro de novos usuários
+- Edição de usuários existentes
+- Exclusão de usuários
+- Alteração de permissões
+
+## Permissões
+
+### ADMINISTRADOR
+- Acesso total ao sistema
+- Gerenciar usuários
+- Cadastrar aeronaves, peças, etapas
+- Registrar testes
+- Gerar relatórios
+
+### ENGENHEIRO
+- Cadastrar aeronaves, peças, etapas
+- Registrar testes
+- Gerar relatórios
+
+### OPERADOR
+- Registrar testes
+- Visualizar informações
+
+## Persistência e Auditoria
+
+### Armazenamento
+- **Usuários:** `data/users.txt` (JSON por linha)
+- **Aeronaves:** `data/aeronaves.txt` (JSON por linha)
+- **Relatórios:** `relatorios/relatorio_<codigo>.txt`
+- **Auditoria:** `data/user_audit.txt`
+
+### Formato de Auditoria
+```
+TIMESTAMP | action:ACTION | actor:ACTOR_ID | target:TARGET_ID | usuario:USERNAME | nivel:ROLE
+```
+
+## Segurança
+
+- Senhas atualmente em texto plano (para desenvolvimento)
+- Autenticação via sessão
+- Controle de acesso por nível de permissão
+- Prevenção de exclusão/despromoção do último administrador
+
+## Tecnologias
+
+### Backend
+- Node.js
+- TypeScript
+- Express
+- Inquirer (CLI)
+
+### Frontend
+- React
+- TypeScript
+- Vite
+- CSS3 Moderno
+
+## Estrutura do Projeto
+
+```
+TP1/
+├── src/                      # Backend
+│   ├── auth/                 # Serviço de autenticação
+│   ├── classes/              # Modelos de dados
+│   ├── enums/                # Enumerações
+│   ├── persistence/          # Persistência em arquivo
+│   ├── services/             # Serviços de negócio
+│   ├── main.ts               # Entry point CLI
+│   └── server.ts             # Servidor Express (API)
+├── frontend/                 # Frontend Web
+│   ├── src/
+│   │   ├── components/       # Componentes React
+│   │   ├── context/          # Contextos React
+│   │   ├── services/         # Cliente API
+│   │   └── types.ts          # Tipos TypeScript
+│   └── ...
+├── data/                     # Dados (gerado automaticamente)
+└── relatorios/               # Relatórios (gerado automaticamente)
+```
+
+## Exemplo de Uso Rápido
+
+### Via Web (GUI)
+
+1. Inicie o servidor: `npm run server`
+2. Inicie o frontend: `cd frontend && npm run dev`
+3. Acesse: `http://localhost:5173`
+4. Faça login com `admin / admin123`
+5. Explore o dashboard e cadastre uma aeronave
+
+### Via CLI
+
+1. Execute: `npm run dev`
+2. Selecione "Login" e entre com `admin / admin123`
+3. Navegue pelo menu interativo
+
+## Desenvolvimento
+
+### Compilar Backend
+```bash
+npm run build
+```
+
+### Compilar Frontend
+```bash
+cd frontend
+npm run build
+```
+
+### Preview Frontend
+```bash
+cd frontend
+npm run preview
+```
+
+## Documentação de Userflows
+
+O projeto inclui documentação completa dos fluxos de usuário:
+
+- **USERFLOWS.md** - Userflows detalhados de cada tipo de usuário com passos completos
+- **USERFLOWS_VISUAL.md** - Diagramas visuais e fluxogramas de processos
+- **GUIA_RAPIDO.md** - Referência rápida e checklists
+
+**Userflows disponíveis:**
+
+### ADMINISTRADOR
+1. Cadastrar Novo Funcionário
+2. Editar Funcionário Existente
+3. Cadastrar Nova Aeronave
+4. Adicionar Peça a uma Aeronave
+5. Criar e Gerenciar Etapas de Produção
+6. Registrar Teste
+7. Excluir Usuário
+
+### ENGENHEIRO
+1. Visualizar Dashboard
+2. Cadastrar Nova Aeronave
+3. Adicionar Peça e Atualizar Status
+4. Configurar Etapas de Produção
+5. Registrar Testes
+
+### OPERADOR
+1. Acesso Limitado ao Sistema
+2. Registrar Teste de Aeronave
+3. Visualizar Dashboard Somente Leitura
+
+Ver arquivos de documentação para detalhes completos de cada fluxo.
