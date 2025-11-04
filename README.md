@@ -32,14 +32,6 @@ cd ..
 
 ## Execução
 
-### Modo CLI
-
-Para usar a interface CLI original:
-
-```bash
-npm run dev
-```
-
 ### Modo Web (GUI)
 
 Para usar a interface web:
