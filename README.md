@@ -17,36 +17,20 @@ cd Atv2
 
 ### Instalar dependências
 
-Backend (raiz do projeto):
+Backend (raiz do projeto) terminal 1:
 ```bash
 npm install
-```
-
-Frontend (dentro da pasta `frontend`):
-```bash
-cd frontend
-npm install
-```
-
-## Execução
-
-### Modo Web (GUI)
-
-Para usar a interface web:
-
-1. **Terminal 1** - Inicie o servidor backend (na raiz do projeto):
-```bash
 npm run server
 ```
 
-2. **Terminal 2** - Inicie o frontend:
+Frontend (dentro da pasta `frontend`) terminal 2:
 ```bash
 cd frontend
-npm i
+npm install
 npm run dev
 ```
 
-3. Acesse no navegador: `http://localhost:5173`
+## Acesse no navegador: `http://localhost:5173`
 
 ### Login Inicial
 
