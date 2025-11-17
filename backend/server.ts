@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { AuthService } from './auth/authService';
-import { ProductionService } from './services/productionService';
+// Imports atualizados para as versões .prisma
+import { AuthService } from './auth/authService.prisma';
+import { ProductionService } from './services/productionService.prisma';
 import { Aeronave, Peca, Etapa, Teste, Funcionario } from './classes/models';
 import { NivelPermissao, TipoAeronave, TipoPeca, StatusPeca, StatusEtapa, TipoTeste, ResultadoTeste } from './enums';
 
@@ -16,15 +17,20 @@ const prodService = new ProductionService();
 
 const sessions: { [key: string]: Funcionario } = {};
 
-app.post('/api/login', (req: Request, res: Response) => {
-  const { usuario, senha } = req.body;
-  const user = authService.authenticate(usuario, senha);
-  if (!user) {
-    return res.status(401).json({ error: 'Credenciais inválidas' });
+// Rota de login atualizada com async/await e try-catch
+app.post('/api/login', async (req: Request, res: Response) => {
+  try {
+    const { usuario, senha } = req.body;
+    const user = await authService.authenticate(usuario, senha); // Adicionado await
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+    const sessionId = Math.random().toString(36).substring(7);
+    sessions[sessionId] = user;
+    res.json({ sessionId, user: { ...user, senha: undefined } });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
-  const sessionId = Math.random().toString(36).substring(7);
-  sessions[sessionId] = user;
-  res.json({ sessionId, user: { ...user, senha: undefined } });
 });
 
 function requireAuth(req: Request, res: Response, next: () => void) {
@@ -36,6 +42,7 @@ function requireAuth(req: Request, res: Response, next: () => void) {
   next();
 }
 
+// Rota de logout mantida como estava, conforme instruções
 app.post('/api/logout', requireAuth, (req: Request, res: Response) => {
   const sessionId = req.headers.authorization?.replace('Bearer ', '');
   if (sessionId) {
@@ -45,349 +52,367 @@ app.post('/api/logout', requireAuth, (req: Request, res: Response) => {
 });
 
 // Listar aeronaves
-app.get('/api/aeronaves', requireAuth, (req: Request, res: Response) => {
-  res.json(prodService.listAeronaves());
+app.get('/api/aeronaves', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const aeronaves = await prodService.listAeronaves(); // Adicionado await
+    res.json(aeronaves);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message }); // Catch padronizado
+  }
 });
 
 // Obter aeronave por código
-app.get('/api/aeronaves/:codigo', requireAuth, (req: Request, res: Response) => {
-  const { codigo } = req.params;
+app.get('/api/aeronaves/:codigo', requireAuth, async (req: Request, res: Response) => {
   try {
-    const a = prodService.getAeronave(codigo);
+    const { codigo } = req.params;
+    const a = await prodService.getAeronave(codigo); // Adicionado await
+    if (!a) {
+      return res.status(404).json({ error: 'Aeronave não encontrada' });
+    }
     res.json(a);
   } catch (e: any) {
-    res.status(404).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Cadastrar aeronave
-app.post('/api/aeronaves', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo, modelo, tipo, capacidade, alcanceKm } = req.body;
-  const a = new Aeronave(codigo, modelo, tipo, capacidade, alcanceKm);
+app.post('/api/aeronaves', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.cadastrarAeronave(a);
+    const user = (req as any).user;
+    if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo, modelo, tipo, capacidade, alcanceKm } = req.body;
+    const a = new Aeronave(codigo, modelo, tipo, capacidade, alcanceKm);
+    await prodService.cadastrarAeronave(a); // Adicionado await
     res.json({ success: true, message: 'Aeronave cadastrada' });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Atualizar aeronave
-app.put('/api/aeronaves/:codigo', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo } = req.params;
-  const { modelo, tipo, capacidade, alcanceKm } = req.body;
+app.put('/api/aeronaves/:codigo', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.atualizarAeronave(codigo, { modelo, tipo, capacidade, alcanceKm });
+    const user = (req as any).user;
+    if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo } = req.params;
+    const { modelo, tipo, capacidade, alcanceKm } = req.body;
+    await prodService.atualizarAeronave(codigo, { modelo, tipo, capacidade, alcanceKm }); // Adicionado await
     res.json({ success: true, message: 'Aeronave atualizada' });
   } catch (e: any) {
-    const status = e.message.includes('não encontrada') ? 404 : 400;
-    res.status(status).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Excluir aeronave
-app.delete('/api/aeronaves/:codigo', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (user.nivelPermissao !== NivelPermissao.ADMINISTRADOR) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo } = req.params;
+app.delete('/api/aeronaves/:codigo', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.excluirAeronave(codigo);
+    const user = (req as any).user;
+    if (user.nivelPermissao !== NivelPermissao.ADMINISTRADOR) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo } = req.params;
+    await prodService.excluirAeronave(codigo); // Adicionado await
     res.json({ success: true, message: 'Aeronave excluída' });
   } catch (e: any) {
-    const status = e.message.includes('não encontrada') ? 404 : 400;
-    res.status(status).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Adicionar peça
-app.post('/api/aeronaves/:codigo/pecas', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo } = req.params;
-  const { nome, tipo, fornecedor } = req.body;
-  const p = new Peca(nome, tipo, fornecedor);
-  p.status = StatusPeca.EM_PRODUCAO;
+app.post('/api/aeronaves/:codigo/pecas', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.adicionarPeca(codigo, p);
+    const user = (req as any).user;
+    if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo } = req.params;
+    const { nome, tipo, fornecedor } = req.body;
+    const p = new Peca(nome, tipo, fornecedor);
+    p.status = StatusPeca.EM_PRODUCAO;
+    await prodService.adicionarPeca(codigo, p); // Adicionado await
     res.json({ success: true, message: 'Peça adicionada' });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Listar peças
-app.get('/api/aeronaves/:codigo/pecas', requireAuth, (req: Request, res: Response) => {
-  const { codigo } = req.params;
+app.get('/api/aeronaves/:codigo/pecas', requireAuth, async (req: Request, res: Response) => {
   try {
-    const pecas = prodService.listarPecas(codigo);
+    const { codigo } = req.params;
+    const pecas = await prodService.listarPecas(codigo); // Adicionado await
     res.json(pecas);
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Obter peça específica
-app.get('/api/aeronaves/:codigo/pecas/:idx', requireAuth, (req: Request, res: Response) => {
-  const { codigo, idx } = req.params;
+app.get('/api/aeronaves/:codigo/pecas/:idx', requireAuth, async (req: Request, res: Response) => {
   try {
-    const peca = prodService.obterPeca(codigo, parseInt(idx));
+    const { codigo, idx } = req.params;
+    const peca = await prodService.obterPeca(codigo, parseInt(idx)); // Adicionado await
+    if (!peca) {
+      return res.status(404).json({ error: 'Peça inválida ou não encontrada' });
+    }
     res.json(peca);
   } catch (e: any) {
-    const status = e.message.includes('Peça inválida') ? 404 : 400;
-    res.status(status).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Adicionar etapa
-app.post('/api/aeronaves/:codigo/etapas', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo } = req.params;
-  const { nome, prazoDias } = req.body;
-  const e = new Etapa(nome, prazoDias);
+app.post('/api/aeronaves/:codigo/etapas', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.adicionarEtapa(codigo, e);
+    const user = (req as any).user;
+    if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo } = req.params;
+    const { nome, prazoDias } = req.body;
+    const e = new Etapa(nome, prazoDias);
+    await prodService.adicionarEtapa(codigo, e); // Adicionado await
     res.json({ success: true, message: 'Etapa adicionada' });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Registrar teste
-app.post('/api/aeronaves/:codigo/testes', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO, NivelPermissao.OPERADOR].includes(user.nivelPermissao)) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo } = req.params;
-  const { tipo, resultado } = req.body;
-  const t = new Teste(tipo, resultado);
+app.post('/api/aeronaves/:codigo/testes', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.registrarTeste(codigo, t);
+    const user = (req as any).user;
+    if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO, NivelPermissao.OPERADOR].includes(user.nivelPermissao)) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo } = req.params;
+    const { tipo, resultado } = req.body;
+    const t = new Teste(tipo, resultado);
+    await prodService.registrarTeste(codigo, t); // Adicionado await
     res.json({ success: true, message: 'Teste registrado' });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Listar testes da aeronave
-app.get('/api/aeronaves/:codigo/testes', requireAuth, (req: Request, res: Response) => {
-  const { codigo } = req.params;
+app.get('/api/aeronaves/:codigo/testes', requireAuth, async (req: Request, res: Response) => {
   try {
-    const testes = prodService.listarTestes(codigo);
+    const { codigo } = req.params;
+    const testes = await prodService.listarTestes(codigo); // Adicionado await
     res.json(testes);
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Obter teste específico
-app.get('/api/aeronaves/:codigo/testes/:idx', requireAuth, (req: Request, res: Response) => {
-  const { codigo, idx } = req.params;
+app.get('/api/aeronaves/:codigo/testes/:idx', requireAuth, async (req: Request, res: Response) => {
   try {
-    const teste = prodService.obterTeste(codigo, parseInt(idx));
+    const { codigo, idx } = req.params;
+    const teste = await prodService.obterTeste(codigo, parseInt(idx)); // Adicionado await
+    if (!teste) {
+      return res.status(404).json({ error: 'Teste inválido ou não encontrado' });
+    }
     res.json(teste);
   } catch (e: any) {
-    const status = e.message.includes('invalido') || e.message.includes('inválido') ? 404 : 400;
-    res.status(status).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Atualizar teste
-app.put('/api/aeronaves/:codigo/testes/:idx', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo, idx } = req.params;
-  const { tipo, resultado } = req.body;
+app.put('/api/aeronaves/:codigo/testes/:idx', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.atualizarTeste(codigo, parseInt(idx), { tipo, resultado });
+    const user = (req as any).user;
+    if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo, idx } = req.params;
+    const { tipo, resultado } = req.body;
+    await prodService.atualizarTeste(codigo, parseInt(idx), { tipo, resultado }); // Adicionado await
     res.json({ success: true, message: 'Teste atualizado' });
   } catch (e: any) {
-    const status = e.message.includes('inválido') ? 404 : 400;
-    res.status(status).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Excluir teste
-app.delete('/api/aeronaves/:codigo/testes/:idx', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo, idx } = req.params;
+app.delete('/api/aeronaves/:codigo/testes/:idx', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.excluirTeste(codigo, parseInt(idx));
+    const user = (req as any).user;
+    if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo, idx } = req.params;
+    await prodService.excluirTeste(codigo, parseInt(idx)); // Adicionado await
     res.json({ success: true, message: 'Teste excluído' });
   } catch (e: any) {
-    const status = e.message.includes('inválido') ? 404 : 400;
-    res.status(status).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Atualizar status peça
-app.put('/api/aeronaves/:codigo/pecas/:idx/status', requireAuth, (req: Request, res: Response) => {
-  const { codigo, idx } = req.params;
-  const { status } = req.body;
+app.put('/api/aeronaves/:codigo/pecas/:idx/status', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.atualizarStatusPeca(codigo, parseInt(idx), status);
+    const { codigo, idx } = req.params;
+    const { status } = req.body;
+    await prodService.atualizarStatusPeca(codigo, parseInt(idx), status); // Adicionado await
     res.json({ success: true });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Atualizar peça (campos gerais)
-app.put('/api/aeronaves/:codigo/pecas/:idx', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo, idx } = req.params;
-  const { nome, tipo, fornecedor, status } = req.body;
+app.put('/api/aeronaves/:codigo/pecas/:idx', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.atualizarPeca(codigo, parseInt(idx), { nome, tipo, fornecedor, status });
+    const user = (req as any).user;
+    if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo, idx } = req.params;
+    const { nome, tipo, fornecedor, status } = req.body;
+    await prodService.atualizarPeca(codigo, parseInt(idx), { nome, tipo, fornecedor, status }); // Adicionado await
     res.json({ success: true, message: 'Peça atualizada' });
   } catch (e: any) {
-    const statusCode = e.message.includes('Peça inválida') ? 404 : 400;
-    res.status(statusCode).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Excluir peça
-app.delete('/api/aeronaves/:codigo/pecas/:idx', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { codigo, idx } = req.params;
+app.delete('/api/aeronaves/:codigo/pecas/:idx', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.excluirPeca(codigo, parseInt(idx));
+    const user = (req as any).user;
+    if (![NivelPermissao.ADMINISTRADOR, NivelPermissao.ENGENHEIRO].includes(user.nivelPermissao)) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { codigo, idx } = req.params;
+    await prodService.excluirPeca(codigo, parseInt(idx)); // Adicionado await
     res.json({ success: true, message: 'Peça excluída' });
   } catch (e: any) {
-    const statusCode = e.message.includes('Peça inválida') ? 404 : 400;
-    res.status(statusCode).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Avançar etapa
-app.post('/api/aeronaves/:codigo/etapas/:idx/avancar', requireAuth, (req: Request, res: Response) => {
-  const { codigo, idx } = req.params;
+app.post('/api/aeronaves/:codigo/etapas/:idx/avancar', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.avancarEtapa(codigo, parseInt(idx));
+    const { codigo, idx } = req.params;
+    await prodService.avancarEtapa(codigo, parseInt(idx)); // Adicionado await
     res.json({ success: true });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Concluir etapa
-app.post('/api/aeronaves/:codigo/etapas/:idx/concluir', requireAuth, (req: Request, res: Response) => {
-  const { codigo, idx } = req.params;
+app.post('/api/aeronaves/:codigo/etapas/:idx/concluir', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.concluirEtapa(codigo, parseInt(idx));
+    const { codigo, idx } = req.params;
+    await prodService.concluirEtapa(codigo, parseInt(idx)); // Adicionado await
     res.json({ success: true });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Associar funcionário à etapa
-app.post('/api/aeronaves/:codigo/etapas/:idx/funcionario', requireAuth, (req: Request, res: Response) => {
-  const { codigo, idx } = req.params;
-  const { funcionarioId } = req.body;
+app.post('/api/aeronaves/:codigo/etapas/:idx/funcionario', requireAuth, async (req: Request, res: Response) => {
   try {
-    prodService.associarFuncionarioEtapa(codigo, parseInt(idx), funcionarioId);
+    const { codigo, idx } = req.params;
+    const { funcionarioId } = req.body;
+    await prodService.associarFuncionarioEtapa(codigo, parseInt(idx), funcionarioId); // Adicionado await
     res.json({ success: true });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
-// Gerar relatório
-app.post('/api/aeronaves/:codigo/relatorio', requireAuth, (req: Request, res: Response) => {
-  const { codigo } = req.params;
+// Gerar e baixar relatório em PDF
+app.post('/api/aeronaves/:codigo/relatorio', requireAuth, async (req: Request, res: Response) => {
   try {
-    const file = prodService.gerarRelatorio(codigo);
-    res.json({ success: true, file });
+    const { codigo } = req.params;
+    const pdfPath = await prodService.gerarRelatorio(codigo);
+    
+    // Enviar o PDF para download
+    res.download(pdfPath, `relatorio_${codigo}.pdf`, (err) => {
+      if (err) {
+        console.error('Erro ao enviar PDF:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Erro ao gerar relatório' });
+        }
+      }
+    });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message });
   }
 });
 
 // Listar usuários
-app.get('/api/users', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (user.nivelPermissao !== NivelPermissao.ADMINISTRADOR) {
-    return res.status(403).json({ error: 'Permissão negada' });
+app.get('/api/users', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (user.nivelPermissao !== NivelPermissao.ADMINISTRADOR) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const users = await authService.listUsers(); // Adicionado await
+    res.json(users.map(u => ({ ...u, senha: undefined })));
+  } catch (e: any) {
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
-  const users = authService.listUsers();
-  res.json(users.map(u => ({ ...u, senha: undefined })));
 });
 
 // Cadastrar usuário
-app.post('/api/users', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  if (user.nivelPermissao !== NivelPermissao.ADMINISTRADOR) {
-    return res.status(403).json({ error: 'Permissão negada' });
-  }
-  const { id, nome, telefone, endereco, usuario, senha, nivelPermissao } = req.body;
-  const f = new Funcionario(id, nome, telefone, endereco, usuario, senha, nivelPermissao);
+app.post('/api/users', requireAuth, async (req: Request, res: Response) => {
   try {
-    authService.registerByActor(f, user.id);
+    const user = (req as any).user;
+    if (user.nivelPermissao !== NivelPermissao.ADMINISTRADOR) {
+      return res.status(403).json({ error: 'Permissão negada' });
+    }
+    const { id, nome, telefone, endereco, usuario, senha, nivelPermissao } = req.body;
+    const f = new Funcionario(id, nome, telefone, endereco, usuario, senha, nivelPermissao);
+    await authService.registerByActor(f, user.id); // Adicionado await
     res.json({ success: true, message: 'Usuário cadastrado' });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Atualizar usuário
-app.put('/api/users/:id', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  const { id } = req.params;
-  const existing = authService.getUserById(id);
-  if (!existing) {
-    return res.status(404).json({ error: 'Usuário não encontrado' });
-  }
-  const { nome, telefone, endereco, usuario, senha, nivelPermissao } = req.body;
-  const novaSenha = senha && senha.length > 0 ? senha : existing.senha;
-  const updated = new Funcionario(id, nome, telefone, endereco, usuario, novaSenha, nivelPermissao);
+app.put('/api/users/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    authService.updateUser(updated, user.id);
+    const user = (req as any).user;
+    const { id } = req.params;
+    const existing = await authService.getUserById(id); // Adicionado await
+    if (!existing) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    const { nome, telefone, endereco, usuario, senha, nivelPermissao } = req.body;
+    const novaSenha = senha && senha.length > 0 ? senha : existing.senha;
+    const updated = new Funcionario(id, nome, telefone, endereco, usuario, novaSenha, nivelPermissao);
+    await authService.updateUser(updated, user.id); // Adicionado await
     res.json({ success: true, message: 'Usuário atualizado' });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 // Excluir usuário
-app.delete('/api/users/:id', requireAuth, (req: Request, res: Response) => {
-  const user = (req as any).user;
-  const { id } = req.params;
+app.delete('/api/users/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    authService.deleteUser(id, user.id);
+    const user = (req as any).user;
+    const { id } = req.params;
+    await authService.deleteUser(id, user.id); // Adicionado await
     res.json({ success: true, message: 'Usuário excluído' });
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    res.status(500).json({ error: e.message }); // Catch padronizado
   }
 });
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
-

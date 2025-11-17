@@ -187,9 +187,33 @@ class ApiService {
   }
 
   async gerarRelatorio(codigo: string) {
-    return this.request<{ success: boolean; file: string }>(`/aeronaves/${codigo}/relatorio`, {
+    const response = await fetch(`${API_URL}/aeronaves/${codigo}/relatorio`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.sessionId}`,
+      },
     });
+
+    if (!response.ok) {
+      throw new Error('Erro ao gerar relatório');
+    }
+
+    // Obter o PDF como blob
+    const blob = await response.blob();
+    
+    // Criar URL temporária para download
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relatorio_${codigo}_${Date.now()}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Limpar
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true, message: 'Relatório baixado com sucesso' };
   }
 
   // Usuários

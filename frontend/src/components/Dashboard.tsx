@@ -29,8 +29,8 @@ export function Dashboard() {
     setError('');
     setSuccess('');
     try {
-      const result = await apiService.gerarRelatorio(codigo);
-      setSuccess(`Relatório gerado com sucesso! Arquivo salvo em: ${result.file}`);
+      await apiService.gerarRelatorio(codigo);
+      setSuccess('Relatório PDF gerado e baixado com sucesso!');
     } catch (err: any) {
       setError(err.message || 'Erro ao gerar relatório');
     }

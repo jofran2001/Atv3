@@ -3,3 +3,9 @@ dist/
 data/
 relatorios/
 *.log
+
+# Prisma
+.env
+.env.local
+prisma/*.db
+prisma/*.db-journal

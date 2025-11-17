@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum TipoAeronave {
+  COMERCIAL
+  MILITAR
+}
+
+enum TipoPeca {
+  NACIONAL
+  IMPORTADA
+}
+
+enum StatusPeca {
+  EM_PRODUCAO
+  EM_TRANSPORTE
+  PRONTA
+}
+
+enum StatusEtapa {
+  PENDENTE
+  ANDAMENTO
+  CONCLUIDA
+}
+
+enum NivelPermissao {
+  ADMINISTRADOR
+  ENGENHEIRO
+  OPERADOR
+}
+
+enum TipoTeste {
+  ELETRICO
+  HIDRAULICO
+  AERODINAMICO
+}
+
+enum ResultadoTeste {
+  APROVADO
+  REPROVADO
+}
+
+// Models
+model User {
+  id              String          @id @default(uuid())
+  nome            String
+  telefone        String
+  endereco        String
+  usuario         String          @unique
+  senha           String
+  nivelPermissao  NivelPermissao
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relações
+  etapas          EtapaFuncionario[]
+  auditLogs       UserAudit[]
+  
+  @@map("users")
+}
+
+model Aeronave {
+  id          String        @id @default(uuid())
+  codigo      String        @unique
+  modelo      String
+  tipo        TipoAeronave
+  capacidade  Int
+  alcanceKm   Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relações
+  pecas       Peca[]
+  etapas      Etapa[]
+  testes      Teste[]
+  
+  @@map("aeronaves")
+}
+
+model Peca {
+  id          String      @id @default(uuid())
+  nome        String
+  tipo        TipoPeca
+  fornecedor  String
+  status      StatusPeca  @default(EM_PRODUCAO)
+  aeronaveId  String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relações
+  aeronave    Aeronave    @relation(fields: [aeronaveId], references: [id], onDelete: Cascade)
+  
+  @@map("pecas")
+}
+
+model Etapa {
+  id          String        @id @default(uuid())
+  nome        String
+  prazoDias   Int
+  status      StatusEtapa   @default(PENDENTE)
+  aeronaveId  String
+  ordem       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relações
+  aeronave      Aeronave              @relation(fields: [aeronaveId], references: [id], onDelete: Cascade)
+  funcionarios  EtapaFuncionario[]
+  
+  @@map("etapas")
+}
+
+model EtapaFuncionario {
+  id            String    @id @default(uuid())
+  etapaId       String
+  funcionarioId String
+  createdAt     DateTime  @default(now())
+  
+  // Relações
+  etapa         Etapa     @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+  funcionario   User      @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  
+  @@unique([etapaId, funcionarioId])
+  @@map("etapa_funcionarios")
+}
+
+model Teste {
+  id            String          @id @default(uuid())
+  tipo          TipoTeste
+  resultado     ResultadoTeste
+  aeronaveId    String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Relações
+  aeronave      Aeronave        @relation(fields: [aeronaveId], references: [id], onDelete: Cascade)
+  
+  @@map("testes")
+}
+
+model UserAudit {
+  id        String    @id @default(uuid())
+  action    String
+  actorId   String
+  targetId  String?
+  usuario   String
+  nivel     String
+  timestamp DateTime  @default(now())
+  
+  // Relações
+  actor     User      @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  
+  @@map("user_audits")
+}

@@ -8,37 +8,75 @@ O projeto possui duas interfaces:
 - **CLI**: Interface de linha de comando original
 - **GUI Web**: Interface web moderna com React, TypeScript e Vite
 
+## 🆕 Banco de Dados MySQL + Prisma ORM
+
+O projeto agora utiliza **MySQL** como banco de dados com **Prisma ORM** para persistência.
+
+📖 **Ver guia completo**: [PRISMA_SETUP.md](./PRISMA_SETUP.md)
+
+### Setup Rápido do Banco:
+
+```bash
+# 1. Criar banco de dados MySQL
+sudo mysql -u root -p
+> CREATE DATABASE aerocode;
+> CREATE USER 'aerocode_user'@'localhost' IDENTIFIED BY 'password';
+> GRANT ALL PRIVILEGES ON aerocode.* TO 'aerocode_user'@'localhost';
+> EXIT;
+
+# 2. Configurar .env (ajuste a senha)
+cp .env.example .env
+# Edite .env e configure DATABASE_URL
+
+# 3. Executar migrations e seed
+npx prisma generate
+npx prisma migrate dev --name init
+npx prisma db seed
+```
+
 ## Instalação
 ### Clone o repositório
 ```bash
 git clone https://github.com/jofran2001/Atv2.git
 cd Atv2
 ```
-## Após clonar, abra outro terminal no mesmo diretório que clonou
 
 ### Instalar dependências
 
-Backend (raiz do projeto) terminal 1:
+Backend (raiz do projeto):
 ```bash
 npm install
-npm run server
 ```
 
-Frontend (dentro da pasta `frontend`) terminal 2:
+Frontend (dentro da pasta `frontend`):
 ```bash
 cd frontend
 npm install
+```
+
+## Execução
+
+### Modo Web (GUI)
+
+1. **Terminal 1** - Inicie o servidor backend (na raiz do projeto):
+```bash
+npm run server
+```
+
+2. **Terminal 2** - Inicie o frontend:
+```bash
+cd frontend
 npm run dev
 ```
 
-## Acesse no navegador: `http://localhost:5173`
+3. Acesse no navegador: `http://localhost:5173`
 
 ### Login Inicial
 
 - **Usuário:** `admin`
 - **Senha:** `admin123`
 
-Este usuário é criado automaticamente na primeira execução.
+Este usuário é criado automaticamente pelo seed do Prisma.
 
 ## Funcionalidades
 
@@ -95,21 +133,40 @@ Este usuário é criado automaticamente na primeira execução.
 
 ## Persistência e Auditoria
 
-### Armazenamento
-- **Usuários:** `data/users.txt` (JSON por linha)
-- **Aeronaves:** `data/aeronaves.txt` (JSON por linha)
-- **Relatórios:** `relatorios/relatorio_<codigo>.txt`
-- **Auditoria:** `data/user_audit.txt`
+### Banco de Dados MySQL + Prisma ORM
 
-### Formato de Auditoria
-```
-TIMESTAMP | action:ACTION | actor:ACTOR_ID | target:TARGET_ID | usuario:USERNAME | nivel:ROLE
-```
+O sistema utiliza um banco de dados relacional MySQL gerenciado pelo Prisma ORM com as seguintes tabelas:
+
+- **users**: Usuários e funcionários do sistema
+- **aeronaves**: Aeronaves cadastradas
+- **pecas**: Peças de cada aeronave (relacionamento 1:N)
+- **etapas**: Etapas de produção (relacionamento 1:N)
+- **etapa_funcionarios**: Tabela de junção Many-to-Many entre etapas e funcionários
+- **testes**: Testes realizados (relacionamento 1:N com aeronaves)
+- **user_audits**: Log de auditoria de ações administrativas
+
+### Recursos do Prisma:
+- ✅ Type-safe queries
+- ✅ Migrations automáticas
+- ✅ Relacionamentos e cascatas
+- ✅ Índices e constraints
+- ✅ Seed inicial de dados
+
+### Armazenamento Adicional:
+- **Relatórios:** `relatorios/relatorio_<codigo>.txt` (gerados sob demanda)
+
+### Auditoria:
+Todas as ações administrativas (criar, editar, excluir usuários) são registradas na tabela `user_audits` com:
+- Timestamp
+- Ação realizada
+- ID do ator
+- ID do alvo
+- Detalhes do usuário
 
 ## Segurança
 
-- Senhas atualmente em texto plano (para desenvolvimento)
-- Autenticação via sessão
+- Senhas atualmente em texto plano (⚠️ **TODO**: implementar bcrypt)
+- Autenticação via sessão em memória
 - Controle de acesso por nível de permissão
 - Prevenção de exclusão/despromoção do último administrador
 
@@ -119,6 +176,8 @@ TIMESTAMP | action:ACTION | actor:ACTOR_ID | target:TARGET_ID | usuario:USERNAME
 - Node.js
 - TypeScript
 - Express
+- **Prisma ORM** 🆕
+- **MySQL** 🆕
 - Inquirer (CLI)
 
 ### Frontend
@@ -131,23 +190,35 @@ TIMESTAMP | action:ACTION | actor:ACTOR_ID | target:TARGET_ID | usuario:USERNAME
 
 ```
 Atv2/
-├── backend/                  # Backend (antes era src/)
-│   ├── auth/                 # Serviço de autenticação
-│   ├── classes/              # Modelos de dados
-│   ├── enums/                # Enumerações
-│   ├── persistence/          # Persistência em arquivo
-│   ├── services/             # Serviços de negócio
-│   ├── main.ts               # Entry point CLI
-│   └── server.ts             # Servidor Express (API)
-├── frontend/                 # Frontend Web
+├── backend/                          # Backend
+│   ├── auth/
+│   │   ├── authService.ts            # [OLD] Persistência em arquivos
+│   │   └── authService.prisma.ts     # [NEW] Persistência com Prisma 🆕
+│   ├── classes/                      # Modelos de dados (classes TypeScript)
+│   ├── db/
+│   │   └── prisma.ts                 # Cliente Prisma singleton 🆕
+│   ├── enums/                        # Enumerações
+│   ├── persistence/                  # [OLD] File storage (deprecated)
+│   ├── services/
+│   │   ├── productionService.ts      # [OLD] Persistência em arquivos
+│   │   └── productionService.prisma.ts # [NEW] Persistência com Prisma 🆕
+│   ├── main.ts                       # Entry point CLI
+│   └── server.ts                     # Servidor Express (API REST)
+├── frontend/                         # Frontend Web
 │   ├── src/
-│   │   ├── components/       # Componentes React
-│   │   ├── context/          # Contextos React
-│   │   ├── services/         # Cliente API
-│   │   └── types.ts          # Tipos TypeScript
+│   │   ├── components/               # Componentes React
+│   │   ├── context/                  # Contextos React (Auth, Aeronave)
+│   │   ├── services/                 # Cliente API
+│   │   └── types.ts                  # Tipos TypeScript
 │   └── ...
-├── data/                     # Dados (gerado automaticamente)
-└── relatorios/               # Relatórios (gerado automaticamente)
+├── prisma/                           # Prisma ORM 🆕
+│   ├── schema.prisma                 # Schema do banco de dados
+│   └── seed.ts                       # Seed inicial (usuários padrão)
+├── relatorios/                       # Relatórios (gerado automaticamente)
+├── .env                              # Variáveis de ambiente (DATABASE_URL)
+├── .env.example                      # Template de configuração
+├── PRISMA_SETUP.md                   # 📖 Guia completo de setup 🆕
+└── README.md                         # Este arquivo
 ```
 
 ## Exemplo de Uso Rápido
@@ -168,9 +239,22 @@ Atv2/
 
 ## Desenvolvimento
 
-### Compilar Backend
+### Comandos Backend
+
 ```bash
+# Compilar TypeScript
 npm run build
+
+# Executar em desenvolvimento
+npm run dev       # CLI
+npm run server    # API REST
+
+# Prisma
+npx prisma studio           # Interface visual do banco
+npx prisma migrate dev      # Criar nova migration
+npx prisma generate         # Gerar Prisma Client
+npx prisma db seed          # Popular banco com dados iniciais
+npx prisma migrate reset    # Resetar banco (CUIDADO!)
 ```
 
 ### Compilar Frontend
