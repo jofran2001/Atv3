@@ -5,12 +5,17 @@ import { AuthService } from './auth/authService.prisma';
 import { ProductionService } from './services/productionService.prisma';
 import { Aeronave, Peca, Etapa, Teste, Funcionario } from './classes/models';
 import { NivelPermissao, TipoAeronave, TipoPeca, StatusPeca, StatusEtapa, TipoTeste, ResultadoTeste } from './enums';
+import { timingMiddleware } from './middleware/timingMiddleware';
+import { timingHeadersMiddleware } from './middleware/timingHeadersMiddleware';
 
 const app = express();
 const PORT = 3001;
 
+// Middlewares globais
 app.use(cors());
 app.use(express.json());
+app.use(timingHeadersMiddleware); // Adiciona headers de timing para o cliente
+app.use(timingMiddleware); // Adiciona logs de timing no servidor
 
 const authService = new AuthService();
 const prodService = new ProductionService();

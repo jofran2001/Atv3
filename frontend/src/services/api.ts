@@ -1,7 +1,11 @@
 import type { Aeronave, Funcionario, Teste, Peca } from '../types';
 import { TipoAeronave, TipoPeca, StatusPeca, NivelPermissao, TipoTeste, ResultadoTeste } from '../types';
+import { fetchWithTiming, logTimingMetrics } from '../utils/timing';
 
 const API_URL = 'http://localhost:3001/api';
+
+// Flag para ativar/desativar logs de timing (útil para debug)
+const ENABLE_TIMING_LOGS = true;
 
 class ApiService {
   private sessionId: string | null = null;
@@ -22,10 +26,16 @@ class ApiService {
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    // Usa fetchWithTiming para medir performance
+    const { response, metrics } = await fetchWithTiming(`${API_URL}${endpoint}`, {
       ...options,
       headers: { ...this.getHeaders(), ...options.headers },
     });
+
+    // Loga métricas se habilitado
+    if (ENABLE_TIMING_LOGS) {
+      logTimingMetrics(metrics);
+    }
 
     const data = await response.json();
 
